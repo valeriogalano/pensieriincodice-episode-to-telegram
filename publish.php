@@ -59,8 +59,9 @@ function is_just_published($last_episode, $file_path)
 }
 
 $feed_url = 'https://pensieriincodice.it/podcast/index.xml';
-$telegram_chat_id = $argv[1];
-$telegram_api_key = $argv[2];
+$feed_url = $argv[1];
+$telegram_chat_id = $argv[2];
+$telegram_api_key = $argv[3];
 $file_path = './published_episodes.txt';
 
 $last_episode = fetch_last_episode($feed_url);

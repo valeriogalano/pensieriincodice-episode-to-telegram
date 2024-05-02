@@ -22,7 +22,7 @@ jobs:
           php-version: '8.3'
 
       - name: Execute
-        run: php ./publish.php $TELEGRAM_CHAT_ID ${{ secrets.TELEGRAM_BOT_API_KEY }}
+        run: php ./publish.php $PODCAST_RSS_URL $TELEGRAM_CHAT_ID ${{ secrets.TELEGRAM_BOT_API_KEY }}
 
       - name: Commit changes
         uses: stefanzweifel/git-auto-commit-action@v5
