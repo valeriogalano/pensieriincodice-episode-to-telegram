@@ -12,13 +12,19 @@ function fetch_last_episode($feed_url)
 
 /**
  * Publish last episode to Telegram channel
+ * @param $last_episode
+ * @param $telegram_chat_id
+ * @param $telegram_api_key
+ * @param $template
+ * @return false|string
  */
-function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key)
+function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)
 {
-    $title = $last_episode->title;
-    $link = $last_episode->link;
-    $description = $last_episode->description;
-    $content = "🎙️ Nuovo episodio:\n$title\n$link";
+    $content = str_replace(
+        ['{title}', '{link}'],
+        [$last_episode->title, $last_episode->link],
+        $template
+    );
 
     $data = array(
         'chat_id' => $telegram_chat_id,
@@ -58,15 +64,15 @@ function is_just_published($last_episode, $file_path)
     return strpos($content, $link) !== false;
 }
 
-$feed_url = 'https://pensieriincodice.it/podcast/index.xml';
 $feed_url = $argv[1];
 $telegram_chat_id = $argv[2];
 $telegram_api_key = $argv[3];
+$template = "🎙️ Nuovo episodio:\n\n{title}\n\n{link}";
 $file_path = './published_episodes.txt';
 
 $last_episode = fetch_last_episode($feed_url);
 if (!is_just_published($last_episode, $file_path)) {
-    if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key)) {
+    if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)) {
         mark_as_published($last_episode, $file_path);
     }
 }
