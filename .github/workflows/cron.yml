@@ -22,6 +22,11 @@ jobs:
           php-version: '8.3'
 
       - name: Execute
+        env:
+            TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
+            TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+            TELEGRAM_MESSAGE_TEMPLATE: ${{ vars.TELEGRAM_MESSAGE_TEMPLATE }}
+            PODCAST_RSS_URL: ${{ vars.PODCAST_RSS_URL }}
         run: php ./publish.php ${{ vars.PODCAST_RSS_URL }} ${{ vars.TELEGRAM_CHAT_ID }} ${{ secrets.TELEGRAM_BOT_API_KEY }} '${{ vars.TELEGRAM_MESSAGE_TEMPLATE }}'
 
       - name: Commit changes
