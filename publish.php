@@ -3,11 +3,10 @@
 /**
  * Fetch last episode from podcast feed
  */
-function fetch_last_episode($feed_url)
+function fetch_last_episode($feed_url): SimpleXMLElement|false
 {
     $feed = simplexml_load_file($feed_url);
-    $last_episode = $feed->channel->item[0];
-    return $last_episode;
+    return $feed->channel->item[0];
 }
 
 /**
@@ -18,7 +17,7 @@ function fetch_last_episode($feed_url)
  * @param $template
  * @return false|string
  */
-function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)
+function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template): false|string
 {
     $content = str_replace(
         ['{title}', '{link}'],
@@ -47,21 +46,21 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
 /**
  * Add episode link into file
  */
-function mark_as_published($last_episode, $file_path)
+function mark_as_published($last_episode, $file_path): int|false
 {
     $link = $last_episode->link;
 
-    file_put_contents($file_path, "$link\n", FILE_APPEND);
+    return file_put_contents($file_path, "$link\n", FILE_APPEND);
 }
 
 /**
  * Search episode link into file
  */
-function is_just_published($last_episode, $file_path)
+function is_just_published($last_episode, $file_path): bool
 {
     $link = $last_episode->link;
     $content = file_get_contents($file_path);
-    return strpos($content, $link) !== false;
+    return str_contains($content, $link);
 }
 
 $feed_url = getenv('PODCAST_RSS_URL') ?? $argv[1];
@@ -70,9 +69,20 @@ $telegram_api_key = getenv('TELEGRAM_API_KEY') ?? $argv[3];
 $template = getenv('TELEGRAM_TEMPLATE') ?? $argv[4];
 $file_path = './published_episodes.txt';
 
-$last_episode = fetch_last_episode($feed_url);
+if ($last_episode = fetch_last_episode($feed_url)) {
+    echo "Last episode fetched successfully: " . $last_episode->link . "\n";
+}
+
 if (!is_just_published($last_episode, $file_path)) {
     if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)) {
-        mark_as_published($last_episode, $file_path);
+        if (mark_as_published($last_episode, $file_path)) {
+            echo "Episode published successfully\n";
+        } else {
+            echo "Error saving episode\n";
+        }
+    } else {
+        echo "Error publishing episode\n";
     }
+} else {
+    echo "Episode already published\n";
 }
