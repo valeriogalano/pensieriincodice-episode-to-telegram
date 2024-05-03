@@ -64,10 +64,10 @@ function is_just_published($last_episode, $file_path)
     return strpos($content, $link) !== false;
 }
 
-$feed_url = getenv('PODCAST_RSS_URL');
-$telegram_chat_id = $argv[2];
-$telegram_api_key = $argv[3];
-$template = "🎙️ Nuovo episodio:\n\n{title}\n\n{link}";
+$feed_url = getenv('PODCAST_RSS_URL') ?? $argv[1];
+$telegram_chat_id = getenv('TELEGRAM_CHAT_ID') ?? $argv[2];
+$telegram_api_key = getenv('TELEGRAM_API_KEY') ?? $argv[3];
+$template = getenv('TELEGRAM_TEMPLATE') ?? $argv[4];
 $file_path = './published_episodes.txt';
 
 $last_episode = fetch_last_episode($feed_url);
