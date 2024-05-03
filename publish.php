@@ -63,10 +63,10 @@ function is_just_published($last_episode, $file_path): bool
     return str_contains($content, $link);
 }
 
-$feed_url = getenv('PODCAST_RSS_URL') ?? $argv[1];
-$telegram_chat_id = getenv('TELEGRAM_CHAT_ID') ?? $argv[2];
-$telegram_api_key = getenv('TELEGRAM_API_KEY') ?? $argv[3];
-$template = getenv('TELEGRAM_TEMPLATE') ?? $argv[4];
+$feed_url = getenv('PODCAST_RSS_URL');
+$telegram_chat_id = getenv('TELEGRAM_CHAT_ID');
+$telegram_api_key = getenv('TELEGRAM_API_KEY');
+$template = getenv('TELEGRAM_TEMPLATE');
 $file_path = './published_episodes.txt';
 
 if ($last_episode = fetch_last_episode($feed_url)) {
