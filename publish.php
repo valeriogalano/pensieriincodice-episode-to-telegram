@@ -64,7 +64,7 @@ function is_just_published($last_episode, $file_path)
     return strpos($content, $link) !== false;
 }
 
-$feed_url = getenv('FEED_URL');
+$feed_url = getenv('PODCAST_RSS_URL');
 $telegram_chat_id = $argv[2];
 $telegram_api_key = $argv[3];
 $template = "🎙️ Nuovo episodio:\n\n{title}\n\n{link}";
