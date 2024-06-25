@@ -28,6 +28,7 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
     $data = array(
         'chat_id' => $telegram_chat_id,
         'text' => $content,
+        'parse_mode' => 'MarkdownV2',
     );
 
     $options = array(
