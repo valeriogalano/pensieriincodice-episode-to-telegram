@@ -25,6 +25,12 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
         $template
     );
 
+    $content = str_replace(
+        ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'],
+        ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'],
+        $content
+    );
+
     $data = array(
         'chat_id' => $telegram_chat_id,
         'text' => $content,
