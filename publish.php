@@ -21,14 +21,8 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
 {
     $content = str_replace(
         ['{title}', '{link}'],
-        [$last_episode->title, $last_episode->link],
+        [escape($last_episode->title), escape($last_episode->link)],
         $template
-    );
-
-    $content = str_replace(
-        ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'],
-        ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'],
-        $content
     );
 
     $data = array(
@@ -49,6 +43,19 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
     $url = "https://api.telegram.org/bot$telegram_api_key/sendMessage";
     $context = stream_context_create($options);
     return file_get_contents($url, false, $context);
+}
+
+/**
+ * @param array|string $string
+ * @return array|string|string[]
+ */
+function escape(array|string $string): string|array
+{
+    return str_replace(
+        ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'],
+        ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'],
+        $string
+    );
 }
 
 /**
