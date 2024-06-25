@@ -35,6 +35,7 @@ function publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key
         'chat_id' => $telegram_chat_id,
         'text' => $content,
         'parse_mode' => 'MarkdownV2',
+        'disable_notification' => true,
     );
 
     $options = array(
