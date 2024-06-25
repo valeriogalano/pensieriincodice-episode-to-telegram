@@ -65,7 +65,7 @@ function is_just_published($last_episode, $file_path): bool
 
 $feed_url = getenv('PODCAST_RSS_URL');
 $telegram_chat_id = getenv('TELEGRAM_CHAT_ID');
-$telegram_api_key = getenv('TELEGRAM_API_KEY');
+$telegram_api_key = getenv('TELEGRAM_BOT_API_KEY');
 $template = getenv('TELEGRAM_TEMPLATE');
 $file_path = './published_episodes.txt';
 
