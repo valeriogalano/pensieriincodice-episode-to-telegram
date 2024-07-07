@@ -97,7 +97,7 @@ class TelegramPublisher
         $content = @file_get_contents($this->file_path);
 
         if ($content === false) {
-            throw new Exception("Failed to read from file: {$this->file_path}");
+            throw new Exception("Failed to read from file: $this->file_path");
         }
 
         return $content;
@@ -107,7 +107,7 @@ class TelegramPublisher
      * Publish last episode to Telegram channel
      * @throws Exception
      */
-    private function publishToTelegram($last_episode): string
+    private function publishToTelegram($last_episode): void
     {
         // Ensure that $last_episode has a 'link' property
         if (!property_exists($last_episode, 'link')) {
@@ -143,8 +143,6 @@ class TelegramPublisher
         if ($file_get_contents === false) {
             throw new Exception("Error publishing episode");
         }
-
-        return $file_get_contents;
     }
 
     /**
@@ -163,7 +161,7 @@ class TelegramPublisher
      * Add episode link into file
      * @throws Exception
      */
-    private function markAsPublished($last_episode): int
+    private function markAsPublished($last_episode): void
     {
         // Ensure that $last_episode has a 'link' property
         if (!property_exists($last_episode, 'link')) {
@@ -175,13 +173,11 @@ class TelegramPublisher
             throw new Exception('The specified file path is not writable.');
         }
 
-        $file_put_contents = file_put_contents($this->file_path, "{$last_episode->link}\n", FILE_APPEND);
+        $file_put_contents = file_put_contents($this->file_path, "$last_episode->link\n", FILE_APPEND);
 
         if ($file_put_contents === false) {
             throw new Exception("Error saving episode");
         }
-
-        return $file_put_contents;
     }
 }
 
