@@ -1,192 +1,187 @@
 <?php
 
-class TelegramPublisher
+/**
+ * Load podcasts configuration
+ */
+function load_podcasts_config(string $config_file): array
 {
-    private const ESCAPE_CHARACTERS = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
-    private const ESCAPED_CHARACTERS = ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'];
-    private const TELEGRAM_API_URL = "https://api.telegram.org/bot";
+	if (!file_exists($config_file)) {
+		error_log("Configuration file not found: $config_file");
+		exit(1);
+	}
 
-    public function __construct(
-        private readonly string $feed_url,
-        private readonly string $telegram_chat_id,
-        private readonly string $telegram_api_key,
-        private readonly string $template,
-        private readonly string $file_path
-    )
-    {
-    }
+	$config = json_decode(file_get_contents($config_file), true);
 
-    public function run(): void
-    {
-        try {
-            $last_episode = $this->fetchLastEpisode();
+	if ($config === null) {
+		error_log('Error parsing configuration file: ' . json_last_error_msg());
+		exit(1);
+	}
 
-            if (!$last_episode) {
-                echo "No episodes found\n";
-                return;
-            }
-
-            echo "Last episode fetched successfully: " . $last_episode->link . "\n";
-
-            if ($this->isEpisodeAlreadyPublished($last_episode)) {
-                echo "Episode already published\n";
-                return;
-            }
-
-            $this->publishToTelegram($last_episode);
-
-            echo "Episode published successfully\n";
-
-            $this->markAsPublished($last_episode);
-
-            echo "Episode mark as published successfully\n";
-
-        } catch (Exception $e) {
-            error_log("An error occurred: " . $e->getMessage() . "\n");
-            exit(1);
-        }
-    }
-
-    /**
-     * Fetch last episode from podcast feed
-     * @throws Exception
-     */
-    private function fetchLastEpisode(): ?SimpleXMLElement
-    {
-        $feed = simplexml_load_file($this->feed_url);
-        if ($feed === false) {
-            // Handle failed import here; perhaps throw an exception
-            throw new Exception('Failed to import XML Podcast feed document.');
-        }
-
-        if (!property_exists($feed, 'channel')) {
-            // Handle missing 'channel' here; perhaps throw an exception
-            throw new Exception('The feed lacks the "channel" element.');
-        }
-
-        if (!property_exists($feed->channel, 'item')) {
-            // Handle missing 'item' here; perhaps throw an exception
-            throw new Exception('The "channel" element lacks the "item" element.');
-        }
-
-        // We can now safely access the elements
-        return $feed->channel->item[0];
-    }
-
-    /**
-     * Search episode link into file
-     * @throws Exception
-     */
-    private function isEpisodeAlreadyPublished($last_episode): bool
-    {
-        if ($last_episode === null || !property_exists($last_episode, 'link')) {
-            throw new Exception('Invalid podcast episode');
-        }
-
-        $link = $last_episode->link;
-        $content = $this->getContentFromFile();
-
-        return str_contains($content, $link);
-    }
-
-    /**
-     * @throws Exception
-     */
-    private function getContentFromFile(): string
-    {
-        $content = @file_get_contents($this->file_path);
-
-        if ($content === false) {
-            throw new Exception("Failed to read from file: $this->file_path");
-        }
-
-        return $content;
-    }
-
-    /**
-     * Publish last episode to Telegram channel
-     * @throws Exception
-     */
-    private function publishToTelegram($last_episode): void
-    {
-        // Ensure that $last_episode has a 'link' property
-        if (!property_exists($last_episode, 'link')) {
-            throw new Exception('The provided object does not have a "link" property.');
-        }
-
-        // Ensure that $last_episode has a 'title' property
-        if (!property_exists($last_episode, 'title')) {
-            throw new Exception('The provided object does not have a "title" property.');
-        }
-
-        $file_get_contents = file_get_contents(
-            self::TELEGRAM_API_URL . "$this->telegram_api_key/sendMessage",
-            false,
-            stream_context_create([
-                'http' => [
-                    'header' => "Content-type: application/x-www-form-urlencoded\r\n",
-                    'method' => 'POST',
-                    'content' => http_build_query([
-                        'chat_id' => $this->telegram_chat_id,
-                        'text' => str_replace(
-                            ['{title}', '{link}'],
-                            [$this->escape($last_episode->title), $this->escape($last_episode->link)],
-                            $this->template
-                        ),
-                        'parse_mode' => 'MarkdownV2',
-                        'disable_notification' => true,
-                    ]),
-                ],
-            ])
-        );
-
-        if ($file_get_contents === false) {
-            throw new Exception("Error publishing episode");
-        }
-    }
-
-    /**
-     * Escape string for Telegram Markdown2 style
-     */
-    private function escape(array|string $string): string|array
-    {
-        return str_replace(
-            self::ESCAPE_CHARACTERS,
-            self::ESCAPED_CHARACTERS,
-            $string
-        );
-    }
-
-    /**
-     * Add episode link into file
-     * @throws Exception
-     */
-    private function markAsPublished($last_episode): void
-    {
-        // Ensure that $last_episode has a 'link' property
-        if (!property_exists($last_episode, 'link')) {
-            throw new Exception('The provided object does not have a "link" property.');
-        }
-
-        // Ensure that the file is writable
-        if (!is_writable($this->file_path)) {
-            throw new Exception('The specified file path is not writable.');
-        }
-
-        $file_put_contents = file_put_contents($this->file_path, "$last_episode->link\n", FILE_APPEND);
-
-        if ($file_put_contents === false) {
-            throw new Exception("Error saving episode");
-        }
-    }
+	return $config;
 }
 
-$publisher = new TelegramPublisher(
-    getenv('PODCAST_RSS_URL'),
-    getenv('TELEGRAM_CHAT_ID'),
-    getenv('TELEGRAM_BOT_API_KEY'),
-    getenv('TELEGRAM_MESSAGE_TEMPLATE'),
-    './published_episodes.txt'
-);
+/**
+ * Get tracking file path for a specific podcast
+ */
+function get_tracking_file(string $podcast_id): string
+{
+	return "./published_episodes_{$podcast_id}.txt";
+}
 
-$publisher->run();
+/**
+ * Fetch last episode from podcast feed
+ */
+function fetch_last_episode(string $feed_url): SimpleXMLElement|false
+{
+    $feed = simplexml_load_file($feed_url);
+
+    if ($feed === false) {
+        error_log('Error fetching feed: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+    $item = $feed->channel->item[0];
+
+    if ($item === null) {
+        error_log('Error fetching last episode: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+    return $item;
+}
+
+/**
+ * Escape string for Telegram Markdown2 style
+ */
+function escape_telegram(array|string $string): string|array
+{
+    $escape_characters = ['_', '*', '[', ']', '(', ')', '~', '`', '>', '#', '+', '-', '=', '|', '{', '}', '.', '!'];
+    $escaped_characters = ['\_', '\*', '\[', '\]', '\(', '\)', '\~', '\`', '\>', '\#', '\+', '\-', '\=', '\|', '\{', '\}', '\.', '\!'];
+
+    return str_replace($escape_characters, $escaped_characters, $string);
+}
+
+/**
+ * Publish last episode to Telegram channel
+ */
+function publish_to_telegram(SimpleXMLElement $last_episode, string $telegram_chat_id, string $telegram_api_key, string $template): false|string
+{
+    if (empty($title = $last_episode->title) || empty($link = $last_episode->link)) {
+        error_log('Error fetching last episode: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+    $content = str_replace(
+        ['{title}', '{link}'],
+        [escape_telegram((string)$title), escape_telegram((string)$link)],
+        $template
+    );
+
+    echo "Publishing to Telegram: $content\n";
+
+    $telegram_api_url = "https://api.telegram.org/bot";
+
+    $response = file_get_contents(
+        $telegram_api_url . "$telegram_api_key/sendMessage",
+        false,
+        stream_context_create([
+            'http' => [
+                'header' => "Content-type: application/x-www-form-urlencoded\r\n",
+                'method' => 'POST',
+                'content' => http_build_query([
+                    'chat_id' => $telegram_chat_id,
+                    'text' => $content,
+                    'parse_mode' => 'MarkdownV2',
+                    'disable_notification' => true,
+                ]),
+            ],
+        ])
+    );
+
+    if ($response === false) {
+        error_log('Error publishing to Telegram: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+    return $response;
+}
+
+/**
+ * Add episode link into file
+ */
+function mark_as_published($last_episode, $file_path): void
+{
+    if (($link = $last_episode->link) === null) {
+        error_log('Error fetching last episode: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+    echo "Marking as published: $link\n";
+
+    file_put_contents($file_path, "$link\n", FILE_APPEND);
+}
+
+/**
+ * Search episode link into file
+ */
+function is_just_published($last_episode, $file_path): bool
+{
+    if (($link = $last_episode->link) === null) {
+        error_log('Error fetching last episode: ' . print_r(error_get_last(), true));
+        exit(1);
+    }
+
+	// Create file if it doesn't exist
+	if (!file_exists($file_path)) {
+		touch($file_path);
+	}
+
+    $content = file_get_contents($file_path);
+
+    return str_contains($content, $link);
+}
+
+// Main execution
+$telegram_chat_id = getenv('TELEGRAM_CHAT_ID');
+$telegram_api_key = getenv('TELEGRAM_BOT_API_KEY');
+$config_file = './podcasts.json';
+
+// Load all podcasts configuration
+$podcasts = load_podcasts_config($config_file);
+
+echo "Found " . count($podcasts) . " podcast(s) to process\n\n";
+
+// Process each podcast
+foreach ($podcasts as $podcast) {
+	echo "========================================\n";
+	echo "Processing: {$podcast['name']}\n";
+	echo "========================================\n";
+
+	$feed_url = $podcast['feed_url'];
+	$template = $podcast['template'];
+	$file_path = get_tracking_file($podcast['id']);
+
+	// Fetch last episode
+    if ($last_episode = fetch_last_episode($feed_url)) {
+		echo "Last episode fetched: " . $last_episode->link . "\n";
+	} else {
+		echo "Error fetching episode for {$podcast['name']}, skipping...\n\n";
+		continue;
+	}
+
+	// Check if already published
+	if (!is_just_published($last_episode, $file_path)) {
+		if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)) {
+			mark_as_published($last_episode, $file_path);
+			echo "✓ Successfully published!\n";
+		} else {
+			echo "✗ Error publishing to Telegram\n";
+		}
+	} else {
+		echo "Episode already published\n";
+	}
+
+	echo "\n";
+}
+
+echo "All podcasts processed!\n";

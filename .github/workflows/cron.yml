@@ -1,33 +1,63 @@
-name: Cron
+name: Publish Podcast Episodes
 
 on:
   schedule:
     - cron: '0 7-18 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
-    
-    permissions:
-      contents: write
-    
+
     steps:
-      - name: Checkout 
+      - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: '8.3'
 
-      - name: Execute
+      - name: Create podcasts config
         env:
-            TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
-            TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-            TELEGRAM_MESSAGE_TEMPLATE: ${{ vars.TELEGRAM_MESSAGE_TEMPLATE }}
-            PODCAST_RSS_URL: ${{ vars.PODCAST_RSS_URL }}
-        run: php ./publish.php
+          PODCAST1_RSS_URL: ${{ vars.PODCAST1_RSS_URL }}
+          PODCAST1_TEMPLATE: ${{ vars.PODCAST1_TEMPLATE }}
+          PODCAST2_RSS_URL: ${{ vars.PODCAST2_RSS_URL }}
+          PODCAST2_TEMPLATE: ${{ vars.PODCAST2_TEMPLATE }}
+        run: |
+          php -r '
+          $config = [
+            [
+              "id" => "pensieriincodice",
+              "name" => "Pensieri in Codice",
+              "feed_url" => getenv("PODCAST1_RSS_URL"),
+              "template" => getenv("PODCAST1_TEMPLATE")
+            ],
+            [
+              "id" => "goodvibrations",
+              "name" => "Good Vibrations",
+              "feed_url" => getenv("PODCAST2_RSS_URL"),
+              "template" => getenv("PODCAST2_TEMPLATE")
+            ]
+          ];
+          file_put_contents("podcasts.json", json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+          '
 
-      - name: Commit changes
-        uses: stefanzweifel/git-auto-commit-action@v5
+      - name: Run publish script
+        env:
+          TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
+          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+        run: php publish.php
+
+      - name: Commit tracking files
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add published_episodes_*.txt
+          git diff --staged --quiet || git commit -m "Update published episodes [skip ci]"
+          git push
