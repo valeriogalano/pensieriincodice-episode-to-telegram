@@ -71,9 +71,23 @@ function publish_to_telegram(SimpleXMLElement $last_episode, string $telegram_ch
         exit(1);
     }
 
+    // Extract hashtags from itunes:keywords
+    $hashtags = '';
+    $itunes_ns = $last_episode->children('http://www.itunes.com/dtds/podcast-1.0.dtd');
+    if (isset($itunes_ns->keywords)) {
+        $keywords = (string)$itunes_ns->keywords;
+        if (!empty($keywords)) {
+            $keywords_array = array_map('trim', explode(',', $keywords));
+            $hashtags_array = array_map(function($keyword) {
+                return '#' . str_replace(' ', '', $keyword);
+            }, $keywords_array);
+            $hashtags = implode(' ', $hashtags_array);
+        }
+    }
+
     $content = str_replace(
-        ['{title}', '{link}'],
-        [escape_telegram((string)$title), escape_telegram((string)$link)],
+        ['{title}', '{link}', '{hashtags}'],
+        [escape_telegram((string)$title), escape_telegram((string)$link), escape_telegram($hashtags)],
         $template
     );
 
