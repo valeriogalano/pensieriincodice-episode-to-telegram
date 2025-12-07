@@ -117,6 +117,19 @@ function publish_to_telegram(SimpleXMLElement $last_episode, string $telegram_ch
         exit(1);
     }
 
+    // Ensure Telegram API acknowledged success
+    $decoded = json_decode($response, true);
+    if ($decoded === null) {
+        error_log('Invalid response from Telegram API (non-JSON).');
+        exit(1);
+    }
+
+    if (!isset($decoded['ok']) || $decoded['ok'] !== true) {
+        $description = $decoded['description'] ?? 'Unknown error';
+        error_log('Telegram API error: ' . $description);
+        exit(1);
+    }
+
     return $response;
 }
 
@@ -184,16 +197,18 @@ foreach ($podcasts as $podcast) {
 	}
 
 	// Check if already published
-	if (!is_just_published($last_episode, $file_path)) {
-		if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)) {
-			mark_as_published($last_episode, $file_path);
-			echo "✓ Successfully published!\n";
-		} else {
-			echo "✗ Error publishing to Telegram\n";
-		}
-	} else {
-		echo "Episode already published\n";
-	}
+ if (!is_just_published($last_episode, $file_path)) {
+        if (publish_to_telegram($last_episode, $telegram_chat_id, $telegram_api_key, $template)) {
+            mark_as_published($last_episode, $file_path);
+            echo "✓ Successfully published!\n";
+        } else {
+            echo "✗ Error publishing to Telegram\n";
+            // Fail the pipeline if publishing did not succeed
+            exit(1);
+        }
+    } else {
+        echo "Episode already published\n";
+    }
 
 	echo "\n";
 }
