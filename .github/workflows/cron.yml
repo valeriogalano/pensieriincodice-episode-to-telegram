@@ -18,10 +18,13 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          php-version: '8.3'
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
 
       - name: Create podcasts config
         env:
@@ -30,29 +33,20 @@ jobs:
           PODCAST2_RSS_URL: ${{ vars.PODCAST2_RSS_URL }}
           PODCAST2_TEMPLATE: ${{ vars.PODCAST2_TEMPLATE }}
         run: |
-          php -r '
-          $config = [
-            [
-              "id" => "pensieriincodice",
-              "name" => "Pensieri in Codice",
-              "feed_url" => getenv("PODCAST1_RSS_URL"),
-              "template" => getenv("PODCAST1_TEMPLATE")
-            ],
-            [
-              "id" => "goodvibrations",
-              "name" => "Good Vibrations",
-              "feed_url" => getenv("PODCAST2_RSS_URL"),
-              "template" => getenv("PODCAST2_TEMPLATE")
-            ]
-          ];
-          file_put_contents("podcasts.json", json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-          '
+          python -c "
+          import json, os
+          config = [
+            {'id': 'pensieriincodice', 'name': 'Pensieri in Codice', 'feed_url': os.environ['PODCAST1_RSS_URL'], 'template': os.environ['PODCAST1_TEMPLATE']},
+            {'id': 'goodvibrations', 'name': 'Good Vibrations', 'feed_url': os.environ['PODCAST2_RSS_URL'], 'template': os.environ['PODCAST2_TEMPLATE']},
+          ]
+          print(json.dumps(config, indent=2, ensure_ascii=False))
+          " > podcasts.json
 
       - name: Run publish script
         env:
           TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-        run: php publish.php
+        run: python publish.py
 
       - name: Commit tracking files
         run: |
