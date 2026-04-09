@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   publish:
@@ -15,8 +15,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -46,12 +44,7 @@ jobs:
         env:
           TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
           TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
+          LAST_PUBLISHED_URLS: ${{ vars.LAST_PUBLISHED_URLS }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
         run: python publish.py
-
-      - name: Commit tracking files
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add published_episodes_*.txt
-          git diff --staged --quiet || git commit -m "Update published episodes [skip ci]"
-          git push

@@ -2,16 +2,16 @@ import json
 import logging
 import os
 import re
-import sys
 import xml.etree.ElementTree as ET
 
 import requests
+
+from github_state import update_github_variable
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("telegram")
 
 ITUNES_NS = 'http://www.itunes.com/dtds/podcast-1.0.dtd'
-PUBLISHED_FILE_TEMPLATE = './published_episodes_{podcast_id}.txt'
 
 
 def load_podcasts_config(config_file: str) -> list:
@@ -54,19 +54,17 @@ def escape_markdown_v2(text: str) -> str:
     return re.sub(r'([' + re.escape(escape_chars) + r'])', r'\\\1', text)
 
 
-def is_published(link: str, podcast_id: str) -> bool:
-    file_path = PUBLISHED_FILE_TEMPLATE.format(podcast_id=podcast_id)
-    if not os.path.exists(file_path):
-        return False
-    with open(file_path, 'r') as f:
-        return link in f.read()
+def load_published_urls() -> dict:
+    raw = os.environ.get('LAST_PUBLISHED_URLS', '{}')
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        logger.warning("LAST_PUBLISHED_URLS non è JSON valido, uso dict vuoto.")
+        return {}
 
 
-def mark_as_published(link: str, podcast_id: str) -> None:
-    file_path = PUBLISHED_FILE_TEMPLATE.format(podcast_id=podcast_id)
-    logger.info(f"Segnato come pubblicato: {link}")
-    with open(file_path, 'a') as f:
-        f.write(f"{link}\n")
+def is_published(link: str, podcast_id: str, published_urls: dict) -> bool:
+    return published_urls.get(podcast_id) == link
 
 
 def publish_to_telegram(episode: dict, api_key: str, chat_id: str, template: str) -> None:
@@ -99,6 +97,7 @@ if __name__ == "__main__":
     chat_id = os.environ['TELEGRAM_CHAT_ID']
 
     podcasts = load_podcasts_config('./podcasts.json')
+    published_urls = load_published_urls()
     logger.info(f"Trovati {len(podcasts)} podcast da processare")
 
     for podcast in podcasts:
@@ -107,11 +106,12 @@ if __name__ == "__main__":
         episode = fetch_last_episode(podcast['feed_url'])
         logger.info(f"Ultimo episodio: {episode['link']}")
 
-        if is_published(episode['link'], podcast['id']):
+        if is_published(episode['link'], podcast['id'], published_urls):
             logger.info("Episodio già pubblicato, skip.")
             continue
 
         publish_to_telegram(episode, api_key, chat_id, podcast['template'])
-        mark_as_published(episode['link'], podcast['id'])
+        published_urls[podcast['id']] = episode['link']
+        update_github_variable('LAST_PUBLISHED_URLS', json.dumps(published_urls))
 
     logger.info("Tutti i podcast processati.")
