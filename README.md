@@ -16,7 +16,7 @@
 
 ## Come funziona
 
-Il workflow viene eseguito ogni ora tra le 7:00 e le 18:00. Per ogni podcast configurato, controlla il feed RSS alla ricerca di nuovi episodi. Gli episodi già pubblicati vengono tracciati in un file `published_episodes_{podcast_id}.txt` per evitare duplicati. Il workflow può essere attivato anche manualmente dalla scheda Actions.
+Il workflow viene eseguito ogni ora. Per ogni podcast configurato, controlla il feed RSS alla ricerca di nuovi episodi. Gli episodi già pubblicati vengono tracciati tramite la variabile GitHub `LAST_PUBLISHED_URLS` (JSON) per evitare duplicati. Il workflow può essere attivato anche manualmente dalla scheda Actions.
 
 ---
 
@@ -73,16 +73,20 @@ Ascoltalo qui: {link}
 
 Modifica `.github/workflows/cron.yml` e aggiungi nuove configurazioni nello step "Create podcasts config":
 
-```php
-[
-  "id" => "miopodcast",
-  "name" => "Il mio podcast",
-  "feed_url" => getenv("PODCAST3_RSS_URL"),
-  "template" => getenv("PODCAST3_TEMPLATE")
-]
+```python
+{'id': 'miopodcast', 'name': 'Il mio podcast', 'feed_url': os.environ['PODCAST3_RSS_URL'], 'template': os.environ['PODCAST3_TEMPLATE']},
 ```
 
-Aggiungi poi le variabili corrispondenti (`PODCAST3_RSS_URL`, `PODCAST3_TEMPLATE`) in GitHub Actions.
+Aggiungi poi le variabili corrispondenti (`PODCAST3_RSS_URL`, `PODCAST3_TEMPLATE`) sia nello step `env:` del workflow che in GitHub Actions.
+
+### 6. Sviluppo locale (opzionale)
+
+```bash
+python -m venv .venv
+source .venv/bin/activate  # macOS/Linux
+# .venv\Scripts\activate   # Windows
+pip install -r requirements.txt
+```
 
 ---
 
