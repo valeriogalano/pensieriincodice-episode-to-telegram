@@ -9,42 +9,42 @@ permissions:
   contents: read
 
 jobs:
-  publish:
+  pensieriincodice:
     runs-on: ubuntu-latest
-
+    environment: pensieriincodice
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Create podcasts config
-        env:
-          PODCAST1_RSS_URL: ${{ vars.PODCAST1_RSS_URL }}
-          PODCAST1_TEMPLATE: ${{ vars.PODCAST1_TEMPLATE }}
-          PODCAST2_RSS_URL: ${{ vars.PODCAST2_RSS_URL }}
-          PODCAST2_TEMPLATE: ${{ vars.PODCAST2_TEMPLATE }}
-        run: |
-          python -c "
-          import json, os
-          config = [
-            {'id': 'pensieriincodice', 'name': 'Pensieri in Codice', 'feed_url': os.environ['PODCAST1_RSS_URL'], 'template': os.environ['PODCAST1_TEMPLATE']},
-            {'id': 'goodvibrations', 'name': 'Good Vibrations', 'feed_url': os.environ['PODCAST2_RSS_URL'], 'template': os.environ['PODCAST2_TEMPLATE']},
-          ]
-          print(json.dumps(config, indent=2, ensure_ascii=False))
-          " > podcasts.json
-
-      - name: Run publish script
+      - run: pip install -r requirements.txt
+      - run: python publish.py
         env:
           TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
-          TELEGRAM_CHAT_ID: ${{ vars.TELEGRAM_CHAT_ID }}
-          LAST_PUBLISHED_URLS: ${{ vars.LAST_PUBLISHED_URLS }}
+          RSS_URL: ${{ vars.RSS_URL }}
+          CHAT_ID: ${{ vars.CHAT_ID }}
+          TEMPLATE: ${{ vars.TEMPLATE }}
+          LAST_PUBLISHED_URL: ${{ vars.LAST_PUBLISHED_URL }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-        run: python publish.py
+          GITHUB_ENVIRONMENT: ${{ github.environment }}
+
+  goodvibrations:
+    runs-on: ubuntu-latest
+    environment: goodvibrations
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install -r requirements.txt
+      - run: python publish.py
+        env:
+          TELEGRAM_BOT_API_KEY: ${{ secrets.TELEGRAM_BOT_API_KEY }}
+          RSS_URL: ${{ vars.RSS_URL }}
+          CHAT_ID: ${{ vars.CHAT_ID }}
+          TEMPLATE: ${{ vars.TEMPLATE }}
+          LAST_PUBLISHED_URL: ${{ vars.LAST_PUBLISHED_URL }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_ENVIRONMENT: ${{ github.environment }}
