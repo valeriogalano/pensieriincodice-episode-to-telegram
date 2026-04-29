@@ -51,6 +51,10 @@ def escape_markdown_v2(text: str) -> str:
     return re.sub(r'([' + re.escape(escape_chars) + r'])', r'\\\1', text)
 
 
+def normalize_template(template: str) -> str:
+    return template.replace('\\r\\n', '\n').replace('\\n', '\n')
+
+
 def is_published(link: str, last_published_url: str) -> bool:
     return last_published_url == link
 
@@ -84,7 +88,7 @@ if __name__ == "__main__":
     api_key = os.environ['TELEGRAM_BOT_API_KEY']
     chat_id = os.environ['CHAT_ID']
     feed_url = os.environ['RSS_URL']
-    template = os.environ['TEMPLATE']
+    template = normalize_template(os.environ['TEMPLATE'])
     last_published_url = os.environ.get('LAST_PUBLISHED_URL', '')
 
     episode = fetch_last_episode(feed_url)
