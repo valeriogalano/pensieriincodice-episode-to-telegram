@@ -62,7 +62,7 @@ def is_published(link: str, last_published_url: str) -> bool:
 def publish_to_telegram(episode: dict, api_key: str, chat_id: str, template: str) -> None:
     content = template \
         .replace('{title}', escape_markdown_v2(episode['title'])) \
-        .replace('{link}', escape_markdown_v2(episode['link'])) \
+        .replace('{link}', episode['link']) \
         .replace('{hashtags}', escape_markdown_v2(episode['hashtags']))
 
     logger.info(f"Pubblicazione su Telegram: {content[:80]}...")
