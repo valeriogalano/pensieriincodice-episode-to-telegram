@@ -7,6 +7,7 @@ from publish import (
     escape_markdown_v2,
     fetch_last_episode,
     is_published,
+    normalize_template,
     publish_to_telegram,
 )
 
@@ -59,6 +60,23 @@ class TestEscapeMarkdownV2:
 
     def test_empty_string(self):
         assert escape_markdown_v2("") == ""
+
+
+class TestNormalizeTemplate:
+    def test_converts_literal_crlf(self):
+        assert normalize_template("a\\r\\nb") == "a\nb"
+
+    def test_converts_literal_lf(self):
+        assert normalize_template("a\\nb") == "a\nb"
+
+    def test_real_newlines_unchanged(self):
+        assert normalize_template("a\nb") == "a\nb"
+
+    def test_multiple_sequences(self):
+        assert normalize_template("a\\r\\nb\\r\\nc") == "a\nb\nc"
+
+    def test_empty_string(self):
+        assert normalize_template("") == ""
 
 
 class TestIsPublished:
