@@ -147,6 +147,7 @@ class TestPublishToTelegram:
         assert payload["chat_id"] == "-100123"
         assert "Test Ep" in payload["text"]
         assert "https://ex.com/ep-1" in payload["text"]
+        assert payload["link_preview_options"] == {"url": "https://ex.com/ep-1"}
 
     def test_link_not_escaped_in_output(self):
         episode = {"title": "Ep", "link": "https://www.spreaker.com/ep-12-test--1", "hashtags": ""}
