@@ -74,6 +74,7 @@ def publish_to_telegram(episode: dict, api_key: str, chat_id: str, template: str
             'text': content,
             'parse_mode': 'MarkdownV2',
             'disable_notification': True,
+            'link_preview_options': {'url': episode['link']},
         }
     )
 
