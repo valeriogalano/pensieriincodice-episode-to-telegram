@@ -134,7 +134,7 @@ class TestFetchLastEpisode:
 
 class TestPublishToTelegram:
     def test_sends_correct_request(self):
-        episode = {"title": "Test Ep", "link": "https://ex.com/ep", "hashtags": "#test"}
+        episode = {"title": "Test Ep", "link": "https://ex.com/ep-1", "hashtags": "#test"}
         template = "Nuovo episodio: {title}\n{link}\n{hashtags}"
         mock_resp = MagicMock()
         mock_resp.json.return_value = {"ok": True}
@@ -145,7 +145,18 @@ class TestPublishToTelegram:
         assert "API_KEY" in call_kwargs[0][0]
         payload = call_kwargs[1]["json"]
         assert payload["chat_id"] == "-100123"
-        assert "Test Ep" in payload["text"] or r"Test Ep" in payload["text"]
+        assert "Test Ep" in payload["text"]
+        assert "https://ex.com/ep-1" in payload["text"]
+
+    def test_link_not_escaped_in_output(self):
+        episode = {"title": "Ep", "link": "https://www.spreaker.com/ep-12-test--1", "hashtags": ""}
+        template = "{title}\n{link}"
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"ok": True}
+        with patch("publish.requests.post", return_value=mock_resp) as mock_post:
+            publish_to_telegram(episode, "KEY", "-100", template)
+        text = mock_post.call_args[1]["json"]["text"]
+        assert "https://www.spreaker.com/ep-12-test--1" in text
 
     def test_raises_on_api_error(self):
         episode = {"title": "Test", "link": "https://ex.com/ep", "hashtags": ""}
